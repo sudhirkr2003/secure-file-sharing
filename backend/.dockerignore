@@ -1,0 +1,4 @@
+target/
+uploads/
+config/application-local.properties
+.git/
