@@ -31,12 +31,27 @@ public class EmailService {
         this.mailEnabled = mailEnabled;
 
         this.httpClient = HttpClient.newHttpClient();
+
+        // Temporary diagnostic logs for Render deployment
+        System.out.println("========== EMAIL CONFIG ==========");
+        System.out.println("mailEnabled = " + this.mailEnabled);
+        System.out.println(
+                "brevoApiKey configured = "
+                        + (this.brevoApiKey != null
+                                && !this.brevoApiKey.isBlank()));
+        System.out.println(
+                "senderEmail configured = "
+                        + (this.senderEmail != null
+                                && !this.senderEmail.isBlank()));
+        System.out.println("senderName = " + this.senderName);
+        System.out.println("==================================");
     }
 
     public void sendOtp(String email, String otp, String purpose) {
 
         if (!mailEnabled) {
-            System.out.println("[LOCAL OTP] " + email + " -> " + otp);
+            System.out.println(
+                    "[LOCAL OTP] " + email + " -> " + otp);
             return;
         }
 
@@ -79,7 +94,8 @@ public class EmailService {
                     escapeJson(buildHtml(otp, purpose)));
 
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
+                    .uri(URI.create(
+                            "https://api.brevo.com/v3/smtp/email"))
                     .header("accept", "application/json")
                     .header("api-key", brevoApiKey)
                     .header("content-type", "application/json")
@@ -99,6 +115,10 @@ public class EmailService {
                                 + ": "
                                 + response.body());
             }
+
+            System.out.println(
+                    "[BREVO] OTP email sent successfully to "
+                            + email);
 
         } catch (IOException e) {
 
