@@ -16,19 +16,15 @@ services:
       - key: JWT_SECRET
         sync: false
       - key: STORAGE_TYPE
-        value: r2
-      - key: R2_ENDPOINT
+        value: cloudinary
+      - key: CLOUDINARY_CLOUD_NAME
         sync: false
-      - key: R2_REGION
-        value: auto
-      - key: R2_ACCESS_KEY
+      - key: CLOUDINARY_API_KEY
         sync: false
-      - key: R2_SECRET_KEY
-        sync: false
-      - key: R2_BUCKET
+      - key: CLOUDINARY_API_SECRET
         sync: false
       - key: MAIL_ENABLED
-        value: true
+        value: "true"
       - key: MAIL_HOST
         value: smtp.gmail.com
       - key: MAIL_PORT
