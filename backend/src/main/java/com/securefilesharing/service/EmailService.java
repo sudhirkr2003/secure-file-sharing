@@ -5,15 +5,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
-import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 @Service
 public class EmailService {
@@ -24,20 +18,17 @@ public class EmailService {
     private final boolean mailEnabled;
 
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
 
     public EmailService(
             @Value("${brevo.api-key:}") String brevoApiKey,
             @Value("${brevo.sender-email:}") String senderEmail,
             @Value("${brevo.sender-name:SecureShare}") String senderName,
-            @Value("${mail.enabled:false}") boolean mailEnabled,
-            ObjectMapper objectMapper) {
+            @Value("${mail.enabled:false}") boolean mailEnabled) {
 
         this.brevoApiKey = brevoApiKey;
         this.senderEmail = senderEmail;
         this.senderName = senderName;
         this.mailEnabled = mailEnabled;
-        this.objectMapper = objectMapper;
 
         this.httpClient = HttpClient.newHttpClient();
     }
@@ -66,20 +57,26 @@ public class EmailService {
 
         try {
 
-            Map<String, Object> sender = new HashMap<>();
-            sender.put("name", senderName);
-            sender.put("email", senderEmail);
-
-            Map<String, Object> recipient = new HashMap<>();
-            recipient.put("email", email);
-
-            Map<String, Object> body = new HashMap<>();
-            body.put("sender", sender);
-            body.put("to", new Object[]{recipient});
-            body.put("subject", subject);
-            body.put("htmlContent", buildHtml(otp, purpose));
-
-            String jsonBody = objectMapper.writeValueAsString(body);
+            String jsonBody = """
+                    {
+                      "sender": {
+                        "name": "%s",
+                        "email": "%s"
+                      },
+                      "to": [
+                        {
+                          "email": "%s"
+                        }
+                      ],
+                      "subject": "%s",
+                      "htmlContent": "%s"
+                    }
+                    """.formatted(
+                    escapeJson(senderName),
+                    escapeJson(senderEmail),
+                    escapeJson(email),
+                    escapeJson(subject),
+                    escapeJson(buildHtml(otp, purpose)));
 
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create("https://api.brevo.com/v3/smtp/email"))
@@ -117,6 +114,20 @@ public class EmailService {
                     "OTP email sending was interrupted",
                     e);
         }
+    }
+
+    private String escapeJson(String value) {
+
+        if (value == null) {
+            return "";
+        }
+
+        return value
+                .replace("\\", "\\\\")
+                .replace("\"", "\\\"")
+                .replace("\r", "\\r")
+                .replace("\n", "\\n")
+                .replace("\t", "\\t");
     }
 
     private String buildHtml(String otp, String purpose) {
