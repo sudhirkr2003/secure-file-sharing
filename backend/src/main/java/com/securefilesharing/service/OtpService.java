@@ -14,26 +14,27 @@ import com.securefilesharing.repository.OtpVerificationRepository;
 @Service
 public class OtpService {
 
-	public static final String REGISTRATION = "REGISTRATION";
-	public static final String PASSWORD_RESET = "PASSWORD_RESET";
+    public static final String REGISTRATION = "REGISTRATION";
+    public static final String PASSWORD_RESET = "PASSWORD_RESET";
 
-	private static final int OTP_EXPIRY_MINUTES = 10;
-	private static final int MAX_ATTEMPTS = 5;
-	private static final int RESEND_COOLDOWN_SECONDS = 120;
+    private static final int OTP_EXPIRY_MINUTES = 10;
+    private static final int MAX_ATTEMPTS = 5;
+    private static final int RESEND_COOLDOWN_SECONDS = 120;
 
-	private final OtpVerificationRepository otpRepository;
-	private final PasswordEncoder passwordEncoder;
-	private final EmailService emailService;
-	private final SecureRandom secureRandom = new SecureRandom();
+    private final OtpVerificationRepository otpRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final OtpEmailService emailService;
+    private final SecureRandom secureRandom = new SecureRandom();
 
-	public OtpService(
-			OtpVerificationRepository otpRepository,
-			PasswordEncoder passwordEncoder,
-			EmailService emailService) {
-		this.otpRepository = otpRepository;
-		this.passwordEncoder = passwordEncoder;
-		this.emailService = emailService;
-	}
+    public OtpService(
+            OtpVerificationRepository otpRepository,
+            PasswordEncoder passwordEncoder,
+            OtpEmailService emailService) {
+
+        this.otpRepository = otpRepository;
+        this.passwordEncoder = passwordEncoder;
+        this.emailService = emailService;
+    }
 
 	@Transactional
 	public void requestRegistrationOtp(RegisterRequest request) {

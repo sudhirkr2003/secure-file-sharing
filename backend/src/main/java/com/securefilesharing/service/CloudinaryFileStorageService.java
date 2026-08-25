@@ -21,6 +21,9 @@ import com.cloudinary.Cloudinary;
 import com.cloudinary.utils.ObjectUtils;
 
 @Service
+@ConditionalOnProperty(
+        name = "storage.type",
+        havingValue = "cloudinary")
 public class CloudinaryFileStorageService implements FileStorageService {
 
     private final Cloudinary cloudinary;

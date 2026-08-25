@@ -1,69 +1,33 @@
 package com.securefilesharing.service;
 
-import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Profile;
+import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 
-@Service
-public class EmailService {
+import jakarta.mail.internet.MimeMessage;
 
-    private final String brevoApiKey;
+@Service
+@Profile("dev")
+public class LocalOtpEmailService implements OtpEmailService {
+
+    private final JavaMailSender mailSender;
     private final String senderEmail;
     private final String senderName;
-    private final boolean mailEnabled;
 
-    private final HttpClient httpClient;
+    public LocalOtpEmailService(
+            JavaMailSender mailSender,
+            @Value("${spring.mail.username}") String senderEmail,
+            @Value("${mail.sender-name:SecureShare}") String senderName) {
 
-    public EmailService(
-            @Value("${brevo.api-key:}") String brevoApiKey,
-            @Value("${brevo.sender-email:}") String senderEmail,
-            @Value("${brevo.sender-name:SecureShare}") String senderName,
-            @Value("${mail.enabled:false}") boolean mailEnabled) {
-
-        this.brevoApiKey = brevoApiKey;
+        this.mailSender = mailSender;
         this.senderEmail = senderEmail;
         this.senderName = senderName;
-        this.mailEnabled = mailEnabled;
-
-        this.httpClient = HttpClient.newHttpClient();
-
-        // Temporary diagnostic logs for Render deployment
-        System.out.println("========== EMAIL CONFIG ==========");
-        System.out.println("mailEnabled = " + this.mailEnabled);
-        System.out.println(
-                "brevoApiKey configured = "
-                        + (this.brevoApiKey != null
-                                && !this.brevoApiKey.isBlank()));
-        System.out.println(
-                "senderEmail configured = "
-                        + (this.senderEmail != null
-                                && !this.senderEmail.isBlank()));
-        System.out.println("senderName = " + this.senderName);
-        System.out.println("==================================");
     }
 
+    @Override
     public void sendOtp(String email, String otp, String purpose) {
-
-        if (!mailEnabled) {
-            System.out.println(
-                    "[LOCAL OTP] " + email + " -> " + otp);
-            return;
-        }
-
-        if (brevoApiKey == null || brevoApiKey.isBlank()) {
-            throw new IllegalStateException(
-                    "Brevo API key is not configured");
-        }
-
-        if (senderEmail == null || senderEmail.isBlank()) {
-            throw new IllegalStateException(
-                    "Brevo sender email is not configured");
-        }
 
         String subject = "Secure File Sharing - "
                 + ("REGISTRATION".equals(purpose)
@@ -71,83 +35,33 @@ public class EmailService {
                         : "Password Reset Code");
 
         try {
+            MimeMessage message = mailSender.createMimeMessage();
 
-            String jsonBody = """
-                    {
-                      "sender": {
-                        "name": "%s",
-                        "email": "%s"
-                      },
-                      "to": [
-                        {
-                          "email": "%s"
-                        }
-                      ],
-                      "subject": "%s",
-                      "htmlContent": "%s"
-                    }
-                    """.formatted(
-                    escapeJson(senderName),
-                    escapeJson(senderEmail),
-                    escapeJson(email),
-                    escapeJson(subject),
-                    escapeJson(buildHtml(otp, purpose)));
+            MimeMessageHelper helper =
+                    new MimeMessageHelper(message, true, "UTF-8");
 
-            HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(
-                            "https://api.brevo.com/v3/smtp/email"))
-                    .header("accept", "application/json")
-                    .header("api-key", brevoApiKey)
-                    .header("content-type", "application/json")
-                    .POST(HttpRequest.BodyPublishers.ofString(jsonBody))
-                    .build();
+            helper.setFrom(senderEmail, senderName);
+            helper.setTo(email);
+            helper.setSubject(subject);
+            helper.setText(
+                    buildText(otp, purpose),
+                    buildHtml(otp, purpose)
+            );
 
-            HttpResponse<String> response = httpClient.send(
-                    request,
-                    HttpResponse.BodyHandlers.ofString());
-
-            if (response.statusCode() < 200
-                    || response.statusCode() >= 300) {
-
-                throw new IllegalStateException(
-                        "Brevo email sending failed. HTTP "
-                                + response.statusCode()
-                                + ": "
-                                + response.body());
-            }
+            mailSender.send(message);
 
             System.out.println(
-                    "[BREVO] OTP email sent successfully to "
+                    "[GMAIL LOCAL] OTP email sent successfully to "
                             + email);
 
-        } catch (IOException e) {
+        } catch (Exception e) {
+
+            e.printStackTrace();
 
             throw new IllegalStateException(
-                    "Unable to send OTP email through Brevo",
-                    e);
-
-        } catch (InterruptedException e) {
-
-            Thread.currentThread().interrupt();
-
-            throw new IllegalStateException(
-                    "OTP email sending was interrupted",
+                    "Unable to send OTP email through Gmail SMTP",
                     e);
         }
-    }
-
-    private String escapeJson(String value) {
-
-        if (value == null) {
-            return "";
-        }
-
-        return value
-                .replace("\\", "\\\\")
-                .replace("\"", "\\\"")
-                .replace("\r", "\\r")
-                .replace("\n", "\\n")
-                .replace("\t", "\\t");
     }
 
     private String buildHtml(String otp, String purpose) {
@@ -264,6 +178,27 @@ public class EmailService {
 
                 </body>
                 </html>
+                """.formatted(title, otp);
+    }
+
+    private String buildText(String otp, String purpose) {
+
+        String title = "REGISTRATION".equals(purpose)
+                ? "Verify your email"
+                : "Reset your password";
+
+        return """
+                SecureShare
+
+                %s
+
+                Your one-time verification code is:
+
+                %s
+
+                This code expires in 10 minutes.
+
+                If you did not request this code, you can safely ignore this email.
                 """.formatted(title, otp);
     }
 }
