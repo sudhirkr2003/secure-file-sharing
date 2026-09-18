@@ -15,6 +15,8 @@ import Register from "./pages/Register";
 import ForgotPassword from "./pages/ForgotPassword";
 import Dashboard from "./pages/Dashboard";
 import DownloadPage from "./pages/DownloadPage";
+import Docs from "./pages/Docs";
+import HealthPage from "./pages/HealthPage";
 
 function DownloadRedirect() {
   const { token } = useParams();
@@ -119,6 +121,7 @@ function Layout() {
           <a href="/#secure">Secure Share</a>
           <a href="/#features">Features</a>
           <a href="/#download">Download</a>
+          <Link to="/docs">Docs</Link>
         </nav>
 
         <div className="nav-tools">
@@ -185,6 +188,7 @@ function Layout() {
             <a href="/#secure" onClick={() => setMobileMenuOpen(false)}>Secure Share</a>
             <a href="/#features" onClick={() => setMobileMenuOpen(false)}>Features</a>
             <a href="/#download" onClick={() => setMobileMenuOpen(false)}>Download</a>
+            <Link to="/docs" onClick={() => setMobileMenuOpen(false)}>Docs</Link>
           </div>
         )}
       </header>
@@ -197,6 +201,8 @@ function Layout() {
         <Route path="/dashboard" element={<Protected><Dashboard /></Protected>} />
         <Route path="/download/:token" element={<DownloadRedirect />} />
         <Route path="/download" element={<DownloadPage />} />
+        <Route path="/docs" element={<Docs />} />
+        <Route path="/health" element={<HealthPage />} />
       </Routes>
 
       <footer className="footer">

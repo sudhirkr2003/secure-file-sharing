@@ -1,4 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE || "http://localhost:8080";
+const API_BASE = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_BASE ||
+  (import.meta.env.DEV
+    ? "http://localhost:8080"
+    : "https://secure-file-sharing-backend-0bfq.onrender.com");
+
+export async function checkHealth() {
+  return api("/api/health");
+}
 
 export function getToken() {
   return localStorage.getItem("ss_token");

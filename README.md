@@ -2,6 +2,8 @@
 
 SecureShare is a secure file-sharing platform built with React and Spring Boot. It lets users upload files and create controlled sharing links with authentication, OTP verification, expiry controls, download limits, access restrictions, and download history.
 
+For the complete API reference, including all endpoints, public/private access rules, request fields, response shapes, validation rules, and curl examples, see [API_DOCUMENTATION.md](API_DOCUMENTATION.md).
+
 ## Features
 
 - Quick Share links for simple, unauthenticated downloads
